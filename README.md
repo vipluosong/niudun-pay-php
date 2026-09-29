@@ -23,7 +23,7 @@
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "https://github.com/niudunpay/niudun-pay-sdk-php.git" }
+        { "type": "vcs", "url": "https://gitee.com/qyyapp/niudun-pay-php.git" }
     ],
     "require": {
         "niudun/open-sdk": "dev-main"
@@ -151,7 +151,7 @@ $client->alloc(['bizAllocNo' => 'AL_001', 'tradeNo' => $result['data']['tradeNo'
 
 ## License
 
-Apache-2.0，可自由用于商业项目与闭源集成，协议全文见 [LICENSE](LICENSE)。主仓库 [牛盾支付 Open](https://gitee.com/niudunpay/niudun-pay) 核心为 LGPL-3.0-or-later，本 SDK 作为独立仓按 Apache-2.0 单独发布。
+Apache-2.0，可自由用于商业项目与闭源集成，协议全文见 [LICENSE](LICENSE)。主仓库 [牛盾支付 Open](https://gitee.com/qyyapp) 核心为 LGPL-3.0-or-later，本 SDK 作为独立仓按 Apache-2.0 单独发布。
 
 ## 开源许可与来源
 
