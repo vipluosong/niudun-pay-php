@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>牛盾支付 PHP SDK 联调 Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f4f6f9; color: #303133; padding: 18px; font-size: 14px;
+  }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { font-size: 19px; }
+  header .conn { color: #606266; font-size: 12px; }
+  header .conn b { color: #409eff; font-weight: 600; }
+  header .spacer { margin-left: auto; }
+
+  /* 三栏布局：接口导航 / 表单与结果 / 代码预览（右栏宽度由拖拽写入 --code-w） */
+  :root { --code-w: 400px; }
+  .layout { display: grid; grid-template-columns: 172px minmax(0, 1fr) var(--code-w); gap: 14px; align-items: start; }
+  /* 代码栏左边缘的分隔条：拖动调宽，双击复位 */
+  .gutter { position: absolute; left: -13px; top: 0; bottom: 0; width: 12px; cursor: col-resize;
+    display: flex; justify-content: center; touch-action: none; }
+  .gutter::before { content: ''; width: 2px; background: #e4e7ed; border-radius: 1px; transition: background .15s; }
+  .gutter:hover::before, .gutter.dragging::before { background: #409eff; }
+  body.resizing { cursor: col-resize; user-select: none; }
+  @media (max-width: 1360px) {
+    .layout { grid-template-columns: 172px minmax(0, 1fr); }
+    .code-card { grid-column: 1 / -1; }
+    .gutter { display: none; }
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .nav-card, .code-card { position: static !important; max-height: none !important; }
+  }
+
+  .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.05); padding: 14px 16px; margin-bottom: 14px; }
+  .nav-card { position: sticky; top: 18px; padding: 10px 8px; max-height: calc(100vh - 40px); overflow: auto; }
+  .code-card { position: sticky; top: 18px; padding: 12px 14px; max-height: calc(100vh - 40px); display: flex; flex-direction: column; }
+
+  /* 接口导航 */
+  .nav-group { margin-bottom: 10px; }
+  .nav-group > .g-title { font-size: 11px; color: #a8abb2; padding: 4px 8px; letter-spacing: .5px; }
+  .nav-item {
+    display: block; width: 100%; text-align: left; border: none; background: none; cursor: pointer;
+    font-size: 13px; color: #606266; padding: 7px 10px; border-radius: 5px; font-family: inherit;
+  }
+  .nav-item:hover { background: #f5f7fa; color: #409eff; }
+  .nav-item.active { background: #ecf5ff; color: #409eff; font-weight: 600; }
+
+  .form-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+    padding-bottom: 10px; border-bottom: 1px solid #ebeef5; }
+  .form-head h3 { font-size: 15px; }
+  .form-head .api { font-size: 12px; color: #909399; font-family: Consolas, monospace; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px 16px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 12px; color: #909399; margin-bottom: 4px; }
+  .field label .req { color: #f56c6c; margin-left: 2px; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 7px 10px; border: 1px solid #dcdfe6; border-radius: 5px; font-size: 13px;
+    font-family: inherit; outline: none; background: #fff;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: #409eff; }
+  .field textarea { height: 54px; resize: vertical; font-family: Consolas, monospace; }
+  .field .hint { font-size: 11px; color: #c0c4cc; margin-top: 3px; }
+  .actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn-send { background: #409eff; color: #fff; border: none; border-radius: 5px; padding: 8px 26px; font-size: 14px; cursor: pointer; }
+  .btn-send:hover { background: #66b1ff; }
+  .btn-send:disabled { background: #a0cfff; cursor: not-allowed; }
+  .btn-plain { background: #fff; color: #606266; border: 1px solid #dcdfe6; border-radius: 5px;
+    padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn-plain:hover { color: #409eff; border-color: #409eff; }
+
+  /* 嵌套列表 / 嵌套对象编辑器 */
+  .rows { display: flex; flex-direction: column; gap: 6px; }
+  .row-item { display: grid; gap: 6px; align-items: center;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) 56px; }
+  .row-item input { padding: 6px 8px; font-size: 12px; border: 1px solid #dcdfe6; border-radius: 4px; outline: none; }
+  .row-item input:focus { border-color: #409eff; }
+  .row-del { background: none; border: 1px solid #fbc4c4; color: #f56c6c; border-radius: 4px;
+    padding: 5px 0; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .row-del:hover { background: #fef0f0; }
+  .obj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+  .obj-grid input { padding: 6px 8px; font-size: 12px; border: 1px solid #dcdfe6; border-radius: 4px; outline: none; }
+  .obj-grid input:focus { border-color: #409eff; }
+
+  /* 结果区 */
+  .status { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; min-height: 20px; }
+  .tag { font-size: 12px; padding: 2px 10px; border-radius: 10px; }
+  .tag.ok { background: #f0f9eb; color: #67c23a; }
+  .tag.fail { background: #fef0f0; color: #f56c6c; }
+  .tag.neutral { background: #f4f4f5; color: #909399; }
+  .paybody { background: #fdf6ec; border: 1px dashed #e6a23c; color: #b88230; border-radius: 5px;
+    padding: 8px 12px; font-size: 12px; word-break: break-all; margin-bottom: 12px; }
+  pre { background: #282c34; color: #abb2bf; border-radius: 6px; padding: 12px 14px;
+    font-size: 12px; line-height: 1.6; overflow: auto; max-height: 320px; font-family: Consolas, monospace; }
+  pre .k { color: #e06c75; } pre .s { color: #98c379; } pre .n { color: #d19a66; } pre .b { color: #56b6c2; }
+  .block h4 { font-size: 13px; color: #606266; margin: 12px 0 6px; }
+
+  /* 代码预览 */
+  .code-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .code-head h3 { font-size: 14px; }
+  .code-head .sub { font-size: 11px; color: #a8abb2; }
+  .code-head .spacer { margin-left: auto; }
+  #codePre { flex: 1; max-height: none; min-height: 200px; overflow: auto;
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+  #codePre .c { color: #7f848e; font-style: italic; }
+  #codePre .s { color: #98c379; }
+  #codePre .kw { color: #c678dd; }
+  #codePre .n { color: #d19a66; }
+
+  /* 回调区 */
+  .cb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+  .cb-head h3 { font-size: 15px; }
+  .cb-head .sub { font-size: 12px; color: #909399; }
+  .cb-item { border: 1px solid #ebeef5; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; }
+  .cb-item summary { cursor: pointer; font-size: 13px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; list-style: none; }
+  .cb-item summary::-webkit-details-marker { display: none; }
+  .cb-item summary .t { color: #909399; font-size: 12px; margin-left: auto; }
+  .cb-item pre { margin-top: 8px; max-height: 240px; }
+  .empty { color: #c0c4cc; text-align: center; padding: 18px 0; font-size: 13px; }
+  .err-banner { background: #fef0f0; color: #f56c6c; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px; display: none; }
+
+  /* 连接配置弹窗 */
+  .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
+    align-items: flex-start; justify-content: center; padding: 60px 16px 24px; z-index: 100; overflow: auto; }
+  .modal { background: #fff; border-radius: 8px; width: 100%; max-width: 720px; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
+  .modal-head { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid #ebeef5; }
+  .modal-head h3 { font-size: 15px; }
+  .modal-head .x { margin-left: auto; background: none; border: none; font-size: 20px; line-height: 1;
+    color: #909399; cursor: pointer; padding: 0 4px; font-family: inherit; }
+  .modal-head .x:hover { color: #f56c6c; }
+  .modal-body { padding: 16px 18px 4px; }
+  .modal-body .sub { font-size: 12px; color: #909399; margin-bottom: 12px; }
+  .modal-foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px 16px; flex-wrap: wrap; }
+  .modal-foot .spacer { margin-left: auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>牛盾支付 PHP SDK 联调 Demo</h1>
+  <span class="conn" id="conn">加载配置中…</span>
+  <button class="btn-plain spacer" id="cfgOpen">连接配置</button>
+</header>
+
+<div class="layout">
+  <!-- 左栏：接口导航（按业务域分组） -->
+  <div class="card nav-card" id="nav"></div>
+
+  <!-- 中栏：表单 + 结果 -->
+  <div>
+    <div class="card">
+      <div class="form-head">
+        <h3 id="formTitle">支付下单</h3>
+        <span class="api" id="formApi"></span>
+      </div>
+      <div class="err-banner" id="formErr"></div>
+      <div class="grid" id="form"></div>
+      <div class="actions">
+        <button class="btn-send" id="sendBtn">发送请求</button>
+        <span class="hint" style="color:#c0c4cc;font-size:12px">所有请求经 NiuDunClient 签名发出，同时验证 SDK 与平台接口</span>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none">
+      <div class="status" id="statusBar"></div>
+      <div class="paybody" id="payBody" style="display:none"></div>
+      <div class="block"><h4>SDK 实际发出的请求（签名后）</h4><pre id="reqPre"></pre></div>
+      <div class="block"><h4>平台原始响应</h4><pre id="respPre"></pre></div>
+    </div>
+
+    <div class="card">
+      <div class="cb-head">
+        <div>
+          <h3>回调通知记录</h3>
+          <span class="sub" id="cbUrlHint"></span>
+        </div>
+        <button class="btn-plain" id="cbClear">清空</button>
+      </div>
+      <div id="cbList"><div class="empty">暂无回调，发起支付/退款/转账/分账时将 notifyUrl 指向上方回调地址，平台通知会实时出现在这里</div></div>
+    </div>
+  </div>
+
+  <!-- 右栏：SDK 调用代码预览（随表单实时生成；左边缘可拖动调宽） -->
+  <div class="card code-card" id="codeCard">
+    <div class="gutter" id="gutter" title="拖动调整宽度，双击复位"></div>
+    <div class="code-head">
+      <h3>SDK 调用代码</h3>
+      <span class="sub">随表单实时生成 ｜ 拖动左边缘可调宽</span>
+      <button class="btn-plain spacer" id="codeCopy">复制</button>
+    </div>
+    <pre id="codePre"></pre>
+  </div>
+</div>
+
+<!-- 连接配置弹窗 -->
+<div class="modal-mask" id="cfgModal" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>连接配置</h3>
+      <button class="x" id="cfgClose" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="sub">配置保存在本机浏览器（localStorage），服务端不落盘；页面配置优先于启动时的配置文件</div>
+      <div class="grid">
+        <div class="field">
+          <label>平台服务地址<span class="req">*</span></label>
+          <input id="cfgServiceUrl" placeholder="http://127.0.0.1:9999">
+        </div>
+        <div class="field">
+          <label>商户号<span class="req">*</span></label>
+          <input id="cfgMchNo" placeholder="M200000001">
+        </div>
+        <div class="field full">
+          <label>应用号</label>
+          <input id="cfgAppId" placeholder="可空，回落平台默认应用">
+        </div>
+        <div class="field full">
+          <label>商户私钥（PKCS#8 PEM）</label>
+          <textarea id="cfgPrivateKey" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+          <div class="hint" id="cfgPrivHint"></div>
+        </div>
+        <div class="field full">
+          <label>平台公钥（X.509 PEM）</label>
+          <textarea id="cfgPublicKey" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+          <div class="hint" id="cfgPubHint"></div>
+        </div>
+      </div>
+      <!-- 测试连接结果（两段式：连通探针 + 签名探针） -->
+      <div id="cfgTestBox" style="display:none;margin-top:10px">
+        <div class="sub" style="margin-bottom:6px">测试连接结果</div>
+        <div id="cfgTestOut" style="font-size:12px;line-height:1.7;color:#606266;word-break:break-all"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-plain" id="cfgTest">测试连接</button>
+      <span class="hint" id="cfgMsg"></span>
+      <span class="spacer"></span>
+      <button class="btn-plain" id="cfgCancel">取消</button>
+      <button class="btn-send" id="cfgSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===== 字典（与平台枚举对齐） =====
+  // 支付方式（PayMethodEnum 常用项，可直接输入其它值）
+  var METHODS = ['wechat_qr', 'wechat_jsapi', 'wechat_mini', 'wechat_h5', 'wechat_app',
+    'wechat_barcode', 'wechat_cashier', 'alipay_qr', 'alipay_jsapi', 'alipay_pc',
+    'alipay_h5', 'alipay_app', 'alipay_barcode', 'union_qr', 'union_jsapi',
+    'union_h5', 'union_barcode'];
+  // 转账通道
+  var TRANSFER_CHANNELS = ['wechat', 'alipay', 'douyin'];
+  // 收款人账号类型（各通道取值不同，取并集）
+  var PAYEE_TYPES = ['openid', 'user_id', 'open_id', 'login_name', 'phone'];
+  // 分账接收方类型（AllocReceiverTypeEnum）
+  var RECEIVER_TYPES = ['MERCHANT_ID', 'PERSONAL_OPENID', 'PERSONAL_SUB_OPENID', 'USER_ID', 'LOGIN_NAME'];
+  // 网关支付类型（GatewayPayTypeEnum）
+  var GATEWAY_TYPES = ['cashier', 'aggregate'];
+
+  // 嵌套类型定义：rows=可增删列表，obj=单个对象
+  var GOODS_DETAIL = [
+    { key: 'goodsId', ph: '商品编码', type: 'String', req: true },
+    { key: 'goodsName', ph: '商品名称', type: 'String', req: true },
+    { key: 'quantity', ph: '数量', type: 'Integer', req: true, num: true },
+    { key: 'unitPrice', ph: '单价(分)', type: 'Long', req: true, num: true },
+    { key: 'category', ph: '分类(支付宝)', type: 'String' },
+    { key: 'description', ph: '商品描述', type: 'String' },
+    { key: 'showUrl', ph: '展示链接', type: 'String' }
+  ];
+  var TERMINAL_INFO = [
+    { key: 'terminalNo', ph: '终端设备号', type: 'String' },
+    { key: 'storeNo', ph: '门店编号', type: 'String' },
+    { key: 'operatorId', ph: '操作员号', type: 'String' },
+    { key: 'deviceName', ph: '设备名称', type: 'String' },
+    { key: 'deviceIp', ph: '设备IP', type: 'String' },
+    { key: 'longitude', ph: '经度', type: 'Double', num: true },
+    { key: 'latitude', ph: '纬度', type: 'Double', num: true }
+  ];
+  var RECEIVERS = [
+    { key: 'receiverType', ph: '接收方类型', type: 'String', req: true, opts: RECEIVER_TYPES },
+    { key: 'receiverAccount', ph: '接收方账号', type: 'String', req: true },
+    { key: 'receiverName', ph: '接收方姓名', type: 'String' },
+    { key: 'amount', ph: '分账金额(分)', type: 'Long', req: true, num: true }
+  ];
+  var REPORT_INFOS = [
+    { key: 'infoType', ph: '报备类型', type: 'String' },
+    { key: 'infoContent', ph: '报备内容', type: 'String' }
+  ];
+
+  // ===== 接口定义（15 个开放接口，按业务域分组） =====
+  // 字段元数据同时驱动三件事：表单渲染 / 请求体组装 / SDK 调用代码生成
+  var INTERFACES = [
+    {
+      key: 'pay', group: '支付', name: '支付下单', action: '/demo/pay',
+      paramClass: 'array<string,mixed>', method: 'pay', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'bizOrderNo', label: '商户订单号', req: true, gen: 'PAY_' },
+        { key: 'title', label: '支付标题', req: true, def: '牛盾支付 SDK 联调测试' },
+        { key: 'amount', label: '支付金额（分）', req: true, def: '100', type: 'int', num: true, hint: '100 = 1.00 元' },
+        { key: 'method', label: '支付方式', opts: METHODS, hint: '如 wechat_qr / alipay_qr / wechat_barcode' },
+        { key: 'notifyUrl', label: '异步通知地址', def: '@callbackBase/callback/pay' },
+        { key: 'allocation', label: '分账订单', type: 'Boolean', bool: true, hint: '分账链路前置条件，未声明则通道拒绝后续分账' },
+        { key: 'description', label: '支付描述' },
+        { key: 'currency', label: '币种', hint: 'ISO 4217，缺省 cny' },
+        { key: 'product', label: '支付产品编码', hint: '空则通道路由自动选择' },
+        { key: 'capability', label: '支付能力编码' },
+        { key: 'openId', label: '用户 OpenId', hint: '微信 jsapi/mini 场景必填' },
+        { key: 'channelAppId', label: '通道应用 AppId', hint: '微信 wxAppId 等' },
+        { key: 'authCode', label: '付款码', hint: '被扫支付必填' },
+        { key: 'limitPay', label: '限制支付类型', csv: true, type: 'array', hint: '逗号分隔，如 no_credit' },
+        { key: 'returnUrl', label: '同步跳转地址' },
+        { key: 'attach', label: '商户扩展参数', hint: '回调原样返回' },
+        { key: 'expiredTime', label: '过期时间', hint: 'GMT+8 yyyy-MM-dd HH:mm:ss，空默认 30 分钟' },
+        { key: 'source', label: '订单来源标识' },
+        { key: 'extraParam', label: '支付扩展参数(JSON)', area: true, hint: '通道特有长尾参数' },
+        { key: 'goodsDetail', label: '商品明细', rows: GOODS_DETAIL, type: 'List<GoodsDetail>' },
+        { key: 'terminal', label: '终端信息', obj: TERMINAL_INFO, type: 'TerminalInfo', hint: '线下 POS/收银台场景' }
+      ]
+    },
+    {
+      key: 'close', group: '支付', name: '关闭订单', action: '/demo/close',
+      paramClass: 'array<string,mixed>', method: 'close', resultClass: 'null',
+      fields: [
+        { key: 'orderNo', label: '平台订单号(tradeNo)', hint: '与商户订单号二选一，优先本字段' },
+        { key: 'bizOrderNo', label: '商户订单号', gen: 'PAY_' },
+        { key: 'useCancel', label: '使用撤销方式', type: 'Boolean', bool: true, hint: '部分通道支持，不支持则忽略' }
+      ]
+    },
+    {
+      key: 'query-pay-order', group: '支付', name: '查支付单', action: '/demo/query-pay-order',
+      paramClass: 'array<string,mixed>', method: 'queryPayOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'orderNo', label: '平台业务单号', hint: '与商户订单号二选一，优先本字段' },
+        { key: 'bizOrderNo', label: '商户订单号', gen: 'PAY_' }
+      ]
+    },
+    {
+      key: 'sync-pay-order', group: '支付', name: '同步支付单', action: '/demo/sync-pay-order',
+      paramClass: 'array<string,mixed>', method: 'syncPayOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'orderNo', label: '平台业务单号' },
+        { key: 'bizOrderNo', label: '商户订单号', gen: 'PAY_' },
+        { key: 'outOrderNo', label: '通道系统交易号' }
+      ]
+    },
+
+    {
+      key: 'refund', group: '退款', name: '退款', action: '/demo/refund',
+      paramClass: 'array<string,mixed>', method: 'refund', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'tradeNo', label: '原支付资金交易号', hint: '与商户订单号二选一，优先本字段' },
+        { key: 'bizOrderNo', label: '原支付商户订单号', gen: 'PAY_' },
+        { key: 'amount', label: '退款金额（分）', req: true, def: '100', type: 'int', num: true },
+        { key: 'reason', label: '退款原因' },
+        { key: 'bizRefundNo', label: '商户退款号', gen: 'RE_', hint: '不传则系统生成' }
+      ]
+    },
+    {
+      key: 'query-refund-order', group: '退款', name: '查退款单', action: '/demo/query-refund-order',
+      paramClass: 'array<string,mixed>', method: 'queryRefundOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'refundNo', label: '平台退款号', hint: '与商户退款号二选一，优先本字段' },
+        { key: 'bizRefundNo', label: '商户退款号', gen: 'RE_' }
+      ]
+    },
+    {
+      key: 'sync-refund-order', group: '退款', name: '同步退款单', action: '/demo/sync-refund-order',
+      paramClass: 'array<string,mixed>', method: 'syncRefundOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'refundNo', label: '平台退款号' },
+        { key: 'bizRefundNo', label: '商户退款号', gen: 'RE_' }
+      ]
+    },
+
+    {
+      key: 'transfer', group: '转账', name: '发起转账', action: '/demo/transfer',
+      paramClass: 'array<string,mixed>', method: 'transfer', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'channel', label: '转账通道', req: true, opts: TRANSFER_CHANNELS, hint: 'wechat / alipay / douyin' },
+        { key: 'channelMchNo', label: '通道商户号', req: true, hint: '转账凭证组装与通道路由用' },
+        { key: 'bizTransferNo', label: '商户转账号', req: true, gen: 'TR_', hint: '幂等键：通道+商户转账号+商户号' },
+        { key: 'amount', label: '转账金额（分）', req: true, def: '100', type: 'int', num: true },
+        { key: 'payeeType', label: '收款人账号类型', req: true, opts: PAYEE_TYPES, hint: '微信=openid；支付宝=user_id/open_id/login_name；抖音=openid/phone' },
+        { key: 'payeeAccount', label: '收款人账号', req: true },
+        { key: 'payeeName', label: '收款人姓名', hint: '微信：<0.3 元禁填，≥2000 元必填' },
+        { key: 'title', label: '转账标题' },
+        { key: 'reason', label: '转账原因/备注' },
+        { key: 'transferScene', label: '转账场景标识', hint: '支付宝=场景配置ID；抖音=枚举码如 1001；微信不传' },
+        { key: 'notifyUrl', label: '回调通知地址', def: '@callbackBase/callback/transfer' },
+        { key: 'attach', label: '商户扩展参数' },
+        { key: 'reportInfos', label: '转账场景报备信息', rows: REPORT_INFOS, type: 'List<TransferParam.ReportInfo>', hint: '微信转账场景必填，留空由通道兜底' }
+      ]
+    },
+    {
+      key: 'query-transfer-order', group: '转账', name: '查转账单', action: '/demo/query-transfer-order',
+      paramClass: 'array<string,mixed>', method: 'queryTransferOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'transferNo', label: '平台转账单号', hint: '单独可查' },
+        { key: 'channel', label: '转账通道', opts: TRANSFER_CHANNELS, hint: '与商户转账号配对使用' },
+        { key: 'bizTransferNo', label: '商户转账号', gen: 'TR_', hint: '须与转账通道成对传入' }
+      ]
+    },
+    {
+      key: 'sync-transfer-order', group: '转账', name: '同步转账单', action: '/demo/sync-transfer-order',
+      paramClass: 'array<string,mixed>', method: 'syncTransferOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'transferNo', label: '平台转账单号' },
+        { key: 'channel', label: '转账通道', opts: TRANSFER_CHANNELS },
+        { key: 'bizTransferNo', label: '商户转账号', gen: 'TR_' }
+      ]
+    },
+
+    {
+      key: 'alloc', group: '分账', name: '发起分账', action: '/demo/alloc',
+      paramClass: 'array<string,mixed>', method: 'alloc', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'bizAllocNo', label: '商户分账单号', req: true, gen: 'AL_', hint: '幂等键，同一应用下唯一' },
+        { key: 'tradeNo', label: '原支付资金交易号', hint: '与商户订单号二选一，优先本字段' },
+        { key: 'bizOrderNo', label: '原支付商户订单号', gen: 'PAY_' },
+        { key: 'title', label: '分账标题' },
+        { key: 'description', label: '分账描述' },
+        { key: 'notifyUrl', label: '异步通知地址', def: '@callbackBase/callback/alloc' },
+        { key: 'attach', label: '商户扩展参数' },
+        { key: 'receivers', label: '分账接收方', req: true, rows: RECEIVERS, type: 'List<AllocParam.Receiver>', full: true,
+          hint: '至少一个；原支付订单须在下单时声明 allocation=true，否则通道拒绝分账' }
+      ]
+    },
+    {
+      key: 'query-alloc-order', group: '分账', name: '查分账单', action: '/demo/query-alloc-order',
+      paramClass: 'array<string,mixed>', method: 'queryAllocOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'allocNo', label: '平台分账单号', hint: '与商户分账单号二选一，优先本字段' },
+        { key: 'bizAllocNo', label: '商户分账单号', gen: 'AL_' }
+      ]
+    },
+    {
+      key: 'sync-alloc-order', group: '分账', name: '同步分账单', action: '/demo/sync-alloc-order',
+      paramClass: 'array<string,mixed>', method: 'syncAllocOrder', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'allocNo', label: '平台分账单号' },
+        { key: 'bizAllocNo', label: '商户分账单号', gen: 'AL_' }
+      ]
+    },
+
+    {
+      key: 'gateway-pre-pay', group: '网关', name: '网关预下单', action: '/demo/gateway-pre-pay',
+      paramClass: 'array<string,mixed>', method: 'gatewayPrePay', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'bizOrderNo', label: '商户订单号', req: true, gen: 'GW_' },
+        { key: 'title', label: '支付标题', req: true, def: '牛盾支付 网关支付联调' },
+        { key: 'amount', label: '支付金额（分）', req: true, def: '100', type: 'int', num: true },
+        { key: 'gatewayPayType', label: '网关支付类型', req: true, opts: GATEWAY_TYPES, hint: 'cashier=统一收银台；aggregate=聚合扫码一码多付' },
+        { key: 'notifyUrl', label: '异步通知地址', def: '@callbackBase/callback/pay' },
+        { key: 'allocation', label: '分账订单', type: 'Boolean', bool: true },
+        { key: 'description', label: '支付描述' },
+        { key: 'currency', label: '币种', hint: 'ISO 4217，缺省 cny' },
+        { key: 'returnUrl', label: '同步跳转地址' },
+        { key: 'storeNo', label: '门店编号' },
+        { key: 'attach', label: '商户扩展参数' },
+        { key: 'expiredTime', label: '过期时间', hint: 'GMT+8 yyyy-MM-dd HH:mm:ss' },
+        { key: 'extraParam', label: '支付扩展参数(JSON)', area: true },
+        { key: 'goodsDetail', label: '商品明细', rows: GOODS_DETAIL, type: 'List<GoodsDetail>' }
+      ]
+    },
+    {
+      key: 'gateway-query', group: '网关', name: '网关查单', action: '/demo/gateway-query',
+      paramClass: 'array<string,mixed>', method: 'gatewayQuery', resultClass: 'array<string,mixed>',
+      fields: [
+        { key: 'orderNo', label: '平台网关单号' },
+        { key: 'bizOrderNo', label: '商户业务单号', gen: 'GW_' },
+        { key: 'appId', label: '应用号', hint: '留空由 SDK 注入连接配置中的应用号' },
+        { key: 'mchNo', label: '商户号', hint: '留空由 SDK 注入连接配置中的商户号' }
+      ]
+    },
+
+    {
+      key: 'signed-ping', group: '自检', name: '签名自检探针', action: '/demo/signed-ping',
+      paramClass: 'array<string,mixed>', method: 'signedPing', resultClass: 'array<string,mixed>',
+      fields: [],
+      hint: '仅公共参数（由 SDK 注入）。走完整验签链路，一键判定商户号/应用/商户私钥/签名串是否可用；完整诊断用「连接配置 → 测试连接」'
+    }
+  ];
+
+  var state = { conn: null, current: INTERFACES[0] };
+  var $ = function (id) { return document.getElementById(id); };
+  // 页面配置的浏览器本地存储键（含密钥明文，仅存本机浏览器，服务端不落盘）
+  var CONFIG_KEY = 'niudun_demo_config';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ==================================================================
+  // 连接配置（弹窗）：服务端内存 + 浏览器 localStorage 持久化
+  // ==================================================================
+
+  function readLocalConfig() {
+    try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function renderConn(cfg) {
+    state.conn = cfg;
+    var keyTip = (cfg.privateKeySet && cfg.publicKeySet)
+      ? ''
+      : ' ｜ <b style="color:#f56c6c">密钥未配置，无法发起交易</b>';
+    $('conn').innerHTML = '平台 <b>' + esc(cfg.serviceUrl) + '</b> ｜ 商户 <b>' + esc(cfg.mchNo || '-') +
+      '</b> ｜ 应用 <b>' + esc(cfg.appId || '默认应用') + '</b>' + keyTip;
+    $('cbUrlHint').textContent = '回调地址：' + cfg.callbackBase +
+      '/callback/{pay|refund|transfer|alloc}（填入表单 notifyUrl 即可闭环）';
+    fillCfgForm(cfg);
+    renderCode();
+  }
+
+  // 弹窗表单回填（密钥框恒留空，留空=保持原值，输入新值=替换）
+  function fillCfgForm(cfg) {
+    $('cfgServiceUrl').value = cfg.serviceUrl || '';
+    $('cfgMchNo').value = cfg.mchNo || '';
+    $('cfgAppId').value = cfg.appId || '';
+    $('cfgPrivateKey').value = '';
+    $('cfgPublicKey').value = '';
+    $('cfgPrivHint').textContent = cfg.privateKeySet ? '已配置（留空保持不变，输入新值可替换）' : '未配置，请粘贴 PKCS#8 PEM 私钥';
+    $('cfgPubHint').textContent = cfg.publicKeySet ? '已配置（留空保持不变，输入新值可替换）' : '未配置，请粘贴 X.509 PEM 公钥';
+  }
+
+  function openCfg() {
+    if (state.conn) { fillCfgForm(state.conn); }
+    $('cfgMsg').textContent = '';
+    $('cfgModal').style.display = 'flex';
+    $('cfgServiceUrl').focus();
+  }
+
+  function closeCfg() {
+    $('cfgModal').style.display = 'none';
+  }
+
+  $('cfgOpen').onclick = openCfg;
+  $('cfgClose').onclick = closeCfg;
+  $('cfgCancel').onclick = closeCfg;
+  // 点击遮罩关闭（仅当点击目标就是遮罩本身）
+  $('cfgModal').onclick = function (e) { if (e.target === $('cfgModal')) { closeCfg(); } };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('cfgModal').style.display !== 'none') { closeCfg(); }
+  });
+
+  // 测试连接（两段式，均由服务端中转规避浏览器跨域）：
+  // ① /demo/ping 免签名连通探针 —— 回答「公网链路是否可达」
+  // ② /demo/signed-ping 签名自检探针 —— 走完整验签链路，判定当前配置的商户号/应用/商户私钥是否正确、能否发起真实调用
+  $('cfgTest').onclick = function () {
+    var serviceUrl = $('cfgServiceUrl').value.trim();
+    if (!serviceUrl) { showCfgMsg('请先填写平台服务地址', true); return; }
+    $('cfgTest').disabled = true;
+    $('cfgTest').textContent = '测试中…';
+    $('cfgTestBox').style.display = 'none';
+    $('cfgTestOut').innerHTML = '';
+    // 先按当前表单值临时提交配置（仅服务端内存生效，不落 localStorage），再探针（未保存的地址也能测）
+    postConfig(false, function (ok) {
+      if (!ok) {
+        // 配置未提交成功（必填校验未过或接口报错），复位按钮，不再发探针
+        $('cfgTest').disabled = false;
+        $('cfgTest').textContent = '测试连接';
+        return;
+      }
+      fetch('/demo/ping', { method: 'POST' }).then(function (r) { return r.json(); }).catch(function (e) {
+        return { success: false, error: '探针请求失败: ' + e.message };
+      }).then(function (res1) {
+        appendTestLine(1, res1.success, res1.success
+          ? '连通正常（' + res1.durationMs + ' ms）：' + res1.marker
+          : '连接失败：' + res1.error);
+        // 第二段独立执行：即使链路不通，签名层的诊断信息也有价值
+        return fetch('/demo/signed-ping', { method: 'POST' }).then(function (r) { return r.json(); });
+      }).catch(function (e) {
+        return { success: false, error: String((e && e.message) || e) };
+      }).then(function (res2) {
+        renderSignedPingResult(res2);
+      }).finally(function () {
+        $('cfgTest').disabled = false;
+        $('cfgTest').textContent = '测试连接';
+      });
+    });
+  };
+
+  /// 测试连接结果框：追加一行阶段结论（✔/✘ + 编号 + 文本）
+  function appendTestLine(stage, ok, text) {
+    $('cfgTestBox').style.display = '';
+    var div = document.createElement('div');
+    div.innerHTML = (ok ? '<span style="color:#67c23a">✔</span> ' : '<span style="color:#f56c6c">✘</span> ')
+      + '<b>' + stage + '</b> ' + esc(text);
+    $('cfgTestOut').appendChild(div);
+  }
+
+  /// 第二段（签名探针）结果渲染：结论 + 排查提示 + 可展开的报文明细（发出报文 vs 服务端待签串）
+  function renderSignedPingResult(res) {
+    if (!res || res.error) {
+      appendTestLine(2, false, (res && res.error) || '签名探针请求失败');
+      return;
+    }
+    if (res.hint && res.hint.indexOf('尚未配置') === 0) {
+      appendTestLine(2, false, res.hint);
+      return;
+    }
+    var ok = !!res.success;
+    if (ok) {
+      var d = res.data || {};
+      appendTestLine(2, true, '签名链路可用（' + res.durationMs + ' ms）：商户 ' + esc(d.mchNo || '-')
+        + ' / 应用 ' + esc(d.appId || '-') + (d.appFromDefault ? '（默认应用）' : '')
+        + '，商户私钥与平台配置匹配，可发起真实调用');
+      return;
+    }
+    appendTestLine(2, false, '[' + res.code + '] ' + esc(res.msg || ''));
+    if (res.hint) {
+      var h = document.createElement('div');
+      h.style.cssText = 'font-size:11px;color:#c0c4cc;margin:2px 0 4px 18px';
+      h.textContent = res.hint;
+      $('cfgTestOut').appendChild(h);
+    }
+    // 展开区：发出报文 + 平台原始响应（20052 时 msg 内含服务端待签串，与发出报文逐字段比对即可定位差异）
+    if (res.requestBody || res.responseBody) {
+      var det = document.createElement('details');
+      det.style.margin = '4px 0 0 18px';
+      var sum = document.createElement('summary');
+      sum.style.cssText = 'cursor:pointer;color:#a8abb2;font-size:11px';
+      sum.textContent = '报文明细（发出 / 响应）';
+      det.appendChild(sum);
+      ['requestBody', 'responseBody'].forEach(function (k) {
+        if (res[k]) {
+          var pre = document.createElement('pre');
+          pre.style.cssText = 'max-height:160px;overflow:auto;background:#f6f8fa;padding:6px;border-radius:4px;margin:4px 0;font-size:11px';
+          pre.textContent = res[k];
+          det.appendChild(pre);
+        }
+      });
+      $('cfgTestOut').appendChild(det);
+    }
+  }
+
+  /// 提交当前弹窗表单到服务端（saveLocal 为 true 时同步落 localStorage）
+  function postConfig(saveLocal, onDone) {
+    var serviceUrl = $('cfgServiceUrl').value.trim();
+    var mchNo = $('cfgMchNo').value.trim();
+    var appId = $('cfgAppId').value.trim();
+    var privateKey = $('cfgPrivateKey').value.trim();
+    var publicKey = $('cfgPublicKey').value.trim();
+    if (!serviceUrl || !mchNo) {
+      showCfgMsg('服务地址与商户号必填', true);
+      if (onDone) { onDone(false); }
+      return;
+    }
+    var body = { serviceUrl: serviceUrl, mchNo: mchNo, appId: appId };
+    if (privateKey) { body.privateKey = privateKey; }
+    if (publicKey) { body.publicKey = publicKey; }
+    fetch('/demo/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res.error) {
+        showCfgMsg(res.error, true);
+        if (onDone) { onDone(false); }
+        return;
+      }
+      if (saveLocal) {
+        var old = readLocalConfig() || {};
+        localStorage.setItem(CONFIG_KEY, JSON.stringify({
+          serviceUrl: serviceUrl,
+          mchNo: mchNo,
+          appId: appId,
+          privateKey: privateKey || old.privateKey || '',
+          publicKey: publicKey || old.publicKey || ''
+        }));
+      }
+      renderConn(res);
+      if (onDone) { onDone(true); }
+    }).catch(function (e) {
+      showCfgMsg('保存失败: ' + e.message, true);
+      if (onDone) { onDone(false); }
+    });
+  }
+
+  // 保存配置：POST 服务端（内存生效） + localStorage 持久化（重启后自动恢复），成功后关窗
+  $('cfgSave').onclick = function () {
+    $('cfgSave').disabled = true;
+    postConfig(true, function (ok) {
+      $('cfgSave').disabled = false;
+      if (ok) {
+        closeCfg();
+        toast('配置已保存（存于本机浏览器，服务重启后自动恢复）');
+      }
+    });
+  };
+
+  function showCfgMsg(text, isError) {
+    var el = $('cfgMsg');
+    el.textContent = text;
+    el.style.color = isError ? '#f56c6c' : '#67c23a';
+  }
+
+  /// 轻提示（保存后弹窗即关，提示需落在页面层）
+  function toast(text) {
+    var el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = 'position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:200;' +
+      'background:#f0f9eb;color:#67c23a;border:1px solid #e1f3d8;border-radius:6px;padding:9px 18px;' +
+      'font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12)';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 2600);
+  }
+
+  // 启动：拉服务端配置 → 若有本地配置则回放（页面配置优先）→ 渲染表单与代码
+  fetch('/demo/config').then(function (r) { return r.json(); }).then(function (serverCfg) {
+    var local = readLocalConfig();
+    // 浏览器本地配置回放：密钥仅在本地存过时才提交，避免误清服务端现有配置
+    if (local && local.serviceUrl && local.mchNo) {
+      var body = { serviceUrl: local.serviceUrl, mchNo: local.mchNo, appId: local.appId || '' };
+      if (local.privateKey) { body.privateKey = local.privateKey; }
+      if (local.publicKey) { body.publicKey = local.publicKey; }
+      return fetch('/demo/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); }).then(function (restored) {
+        renderConn(restored.error ? serverCfg : restored);
+      }).catch(function () { renderConn(serverCfg); });
+    }
+    renderConn(serverCfg);
+  }).catch(function () {
+    $('conn').textContent = '配置加载失败，请检查 DemoServer 是否正常运行';
+  }).finally(function () {
+    renderNav();
+    renderForm();
+  });
+
+  // ==================================================================
+  // 左栏：接口导航（按业务域分组）
+  // ==================================================================
+
+  function renderNav() {
+    var box = $('nav');
+    box.innerHTML = '';
+    var groups = [];
+    INTERFACES.forEach(function (itf) {
+      if (groups.indexOf(itf.group) < 0) { groups.push(itf.group); }
+    });
+    groups.forEach(function (g) {
+      var wrap = document.createElement('div');
+      wrap.className = 'nav-group';
+      var title = document.createElement('div');
+      title.className = 'g-title';
+      title.textContent = g;
+      wrap.appendChild(title);
+      INTERFACES.filter(function (itf) { return itf.group === g; }).forEach(function (itf) {
+        var btn = document.createElement('button');
+        btn.className = 'nav-item' + (itf.key === state.current.key ? ' active' : '');
+        btn.textContent = itf.name;
+        btn.setAttribute('data-iface', itf.key);
+        btn.onclick = function () { selectInterface(itf); };
+        wrap.appendChild(btn);
+      });
+      box.appendChild(wrap);
+    });
+  }
+
+  function selectInterface(itf) {
+    state.current = itf;
+    document.querySelectorAll('.nav-item').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-iface') === itf.key);
+    });
+    renderForm();
+    $('resultCard').style.display = 'none';
+  }
+
+  // ==================================================================
+  // 中栏：表单渲染（字段定义 → 控件；支持嵌套列表/嵌套对象）
+  // ==================================================================
+
+  function renderForm() {
+    var itf = state.current;
+    $('formTitle').textContent = itf.name;
+    $('formApi').textContent = 'POST ' + itf.action.replace('/demo/', '/unipay/') +
+      '   ｜   ' + itf.paramClass + ' → ' + itf.resultClass;
+    var box = $('form');
+    box.innerHTML = '';
+    $('formErr').style.display = 'none';
+    itf.fields.forEach(function (f) { box.appendChild(renderField(f)); });
+    renderCode();
+  }
+
+  function renderField(f) {
+    var div = document.createElement('div');
+    div.className = 'field' + (f.full || f.rows || f.obj ? ' full' : '');
+    var label = f.label + (f.req ? '<span class="req">*</span>' : '');
+    var hint = f.hint ? '<div class="hint">' + f.hint + '</div>' : '';
+
+    if (f.rows) {
+      div.innerHTML = '<label>' + label + '</label><div class="rows" data-rows="' + f.key + '"></div>' +
+        '<div style="margin-top:6px"><button class="btn-plain" data-add-row="' + f.key + '">+ 添加一行</button></div>' + hint;
+      div.querySelector('[data-add-row]').onclick = function () { addRow(f, div); };
+      return div;
+    }
+    if (f.obj) {
+      var cells = f.obj.map(function (s) {
+        return '<input data-sub="' + s.key + '" placeholder="' + esc(s.ph) + '">';
+      }).join('');
+      div.innerHTML = '<label>' + label + '</label><div class="obj-grid" data-obj="' + f.key + '">' + cells + '</div>' + hint;
+      return div;
+    }
+    if (f.bool) {
+      div.innerHTML = '<label>' + label + '</label>' +
+        '<select data-key="' + f.key + '"><option value="">不传（默认）</option>' +
+        '<option value="true">true</option><option value="false">false</option></select>' + hint;
+      return div;
+    }
+    if (f.area) {
+      div.innerHTML = '<label>' + label + '</label><textarea data-key="' + f.key +
+        '" placeholder="' + esc(f.hint || '') + '">' + esc(fieldDefault(f)) + '</textarea>' + hint;
+      return div;
+    }
+    var listId = f.opts ? 'dl_' + f.key : '';
+    var listAttr = f.opts ? ' list="' + listId + '"' : '';
+    var datalist = f.opts ? '<datalist id="' + listId + '">' + f.opts.map(function (o) {
+      return '<option value="' + o + '"></option>';
+    }).join('') + '</datalist>' : '';
+    div.innerHTML = '<label>' + label + '</label>' +
+      '<input data-key="' + f.key + '"' + listAttr + ' value="' + esc(fieldDefault(f)) +
+      '" placeholder="' + (f.opts ? '可输入或选择' : '') + '">' + datalist + hint;
+    return div;
+  }
+
+  /// 嵌套列表：追加一行（子字段由 f.rows 定义）
+  function addRow(f, fieldDiv) {
+    var box = fieldDiv.querySelector('[data-rows="' + f.key + '"]');
+    var row = document.createElement('div');
+    row.className = 'row-item';
+    var cells = f.rows.map(function (s) {
+      var listAttr = s.opts ? ' list="dl_sub_' + s.key + '"' : '';
+      return '<input data-sub="' + s.key + '"' + listAttr + ' placeholder="' + esc(s.ph) + '">';
+    }).join('');
+    row.innerHTML = cells + '<button class="row-del">删除</button>';
+    row.querySelector('.row-del').onclick = function () { row.remove(); renderCode(); };
+    // 子字段输入实时刷新代码预览
+    row.querySelectorAll('input').forEach(function (inp) {
+      inp.addEventListener('input', debouncedCode);
+    });
+    box.appendChild(row);
+    // 带选项的子字段：datalist 整个字段容器只挂一份，避免多行重复 id
+    if (!fieldDiv.querySelector('[data-dl="' + f.key + '"]')) {
+      var dl = f.rows.filter(function (s) { return s.opts; }).map(function (s) {
+        return '<datalist id="dl_sub_' + s.key + '">' + s.opts.map(function (o) {
+          return '<option value="' + o + '"></option>';
+        }).join('') + '</datalist>';
+      }).join('');
+      if (dl) {
+        var holder = document.createElement('div');
+        holder.setAttribute('data-dl', f.key);
+        holder.innerHTML = dl;
+        fieldDiv.appendChild(holder);
+      }
+    }
+    renderCode();
+  }
+
+  function fieldDefault(f) {
+    if (f.gen) { return f.gen + Date.now(); }
+    if (f.def) {
+      if (f.def.indexOf('@callbackBase') === 0 && state.conn) {
+        return state.conn.callbackBase + f.def.substring('@callbackBase'.length);
+      }
+      return f.def;
+    }
+    return '';
+  }
+
+  // ==================================================================
+  // 表单值收集（供请求组装与代码预览共用）
+  // ==================================================================
+
+  /// 收集当前表单值为普通对象；nested 为 true 时同时返回嵌套结构
+  function collectValues() {
+    var itf = state.current;
+    var values = {};
+    itf.fields.forEach(function (f) {
+      if (f.rows) {
+        var arr = [];
+        document.querySelectorAll('#form [data-rows="' + f.key + '"] .row-item').forEach(function (row) {
+          var item = {};
+          var any = false;
+          f.rows.forEach(function (s) {
+            var v = (row.querySelector('[data-sub="' + s.key + '"]') || {}).value || '';
+            v = v.trim();
+            if (v) { any = true; }
+            item[s.key] = coerce(v, s);
+          });
+          if (any) { arr.push(item); }
+        });
+        if (arr.length) { values[f.key] = arr; }
+        return;
+      }
+      if (f.obj) {
+        var obj = {};
+        var any2 = false;
+        f.obj.forEach(function (s) {
+          var v = (document.querySelector('#form [data-obj="' + f.key + '"] [data-sub="' + s.key + '"]') || {}).value || '';
+          v = v.trim();
+          if (v) { any2 = true; }
+          obj[s.key] = coerce(v, s);
+        });
+        if (any2) { values[f.key] = obj; }
+        return;
+      }
+      var el = document.querySelector('#form [data-key="' + f.key + '"]');
+      var val = el ? el.value.trim() : '';
+      if (!val) { return; }
+      values[f.key] = coerce(val, f);
+    });
+    return values;
+  }
+
+  /// 按字段元数据类型转换输入值
+  function coerce(v, f) {
+    if (!v) { return v; }
+    if (f.type === 'Boolean') { return v === 'true'; }
+    if (f.num || f.type === 'Long' || f.type === 'Integer') {
+      return /^-?\d+$/.test(v) ? parseInt(v, 10) : v;
+    }
+    if (f.type === 'Double') {
+      return /^-?\d+(\.\d+)?$/.test(v) ? parseFloat(v) : v;
+    }
+    if (f.csv || f.type === 'List<String>') {
+      return v.split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x; });
+    }
+    return v;
+  }
+
+  /// 发送前的校验（只校验必填与类型，空值一律不提交，交由平台/SDK 默认值）
+  function validate() {
+    var itf = state.current;
+    var bad = [];
+    itf.fields.forEach(function (f) {
+      if (f.rows) {
+        var rows = document.querySelectorAll('#form [data-rows="' + f.key + '"] .row-item');
+        if (f.req && !rows.length) { bad.push(f.label + '（至少一行）'); return; }
+        rows.forEach(function (row, i) {
+          f.rows.forEach(function (s) {
+            var v = ((row.querySelector('[data-sub="' + s.key + '"]') || {}).value || '').trim();
+            if (s.req && !v) { bad.push(f.label + ' 第' + (i + 1) + '行 ' + s.ph); }
+            if (v && (s.type === 'Long' || s.type === 'Integer') && !/^-?\d+$/.test(v)) {
+              bad.push(f.label + ' 第' + (i + 1) + '行 ' + s.ph + '（须为整数）');
+            }
+          });
+        });
+        return;
+      }
+      if (f.obj) {
+        f.obj.forEach(function (s) {
+          var v = ((document.querySelector('#form [data-obj="' + f.key + '"] [data-sub="' + s.key + '"]') || {}).value || '').trim();
+          if (v && (s.type === 'Long' || s.type === 'Integer') && !/^-?\d+$/.test(v)) {
+            bad.push(f.label + ' ' + s.ph + '（须为整数）');
+          }
+        });
+        return;
+      }
+      var el = document.querySelector('#form [data-key="' + f.key + '"]');
+      var val = el ? el.value.trim() : '';
+      if (!val) {
+        if (f.req) { bad.push(f.label); }
+        return;
+      }
+      if (f.num && !/^-?\d+$/.test(val)) { bad.push(f.label + '（须为整数）'); }
+      if (f.area) {
+        try { JSON.parse(val); } catch (e) { bad.push(f.label + '（JSON 不合法）'); }
+      }
+    });
+    return bad;
+  }
+
+  $('sendBtn').onclick = function () {
+    var bad = validate();
+    if (bad.length) {
+      $('formErr').textContent = '请检查：' + bad.join('、');
+      $('formErr').style.display = 'block';
+      return;
+    }
+    send(state.current.action, collectValues());
+  };
+
+  function send(action, param) {
+    $('sendBtn').disabled = true;
+    $('sendBtn').textContent = '请求中…';
+    fetch(action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(param)
+    }).then(function (r) { return r.json(); }).then(function (res) { showResult(res); })
+      .catch(function (e) {
+        showResult({ success: false, error: '页面请求失败: ' + e.message, requestBody: null, responseBody: null });
+      }).finally(function () {
+        $('sendBtn').disabled = false;
+        $('sendBtn').textContent = '发送请求';
+      });
+  }
+
+  // ==================================================================
+  // 右栏：SDK 调用代码生成（字段元数据驱动，新增接口零额外成本）
+  // ==================================================================
+
+  var codeTimer = null;
+  function debouncedCode() {
+    clearTimeout(codeTimer);
+    codeTimer = setTimeout(renderCode, 200);
+  }
+  // 表单输入实时刷新代码预览
+  document.addEventListener('input', function (e) {
+    if (e.target.closest && e.target.closest('#form')) { debouncedCode(); }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.closest && e.target.closest('#form')) { debouncedCode(); }
+  });
+
+  function renderCode() {
+    var itf = state.current;
+    var cfg = state.conn || {};
+    var values = collectValues();
+    var L = [];
+
+    L.push('<?php');
+    L.push('// 依赖: niudun/open-sdk（composer require niudun/open-sdk）');
+    L.push('// 密钥不入预览，生产环境从配置中心/环境变量读取');
+    L.push('$config = (new \\NiuDun\\OpenSdk\\Config())');
+    L.push('    ->setServiceUrl(\'' + str(cfg.serviceUrl || '') + '\')');
+    L.push('    ->setMchNo(\'' + str(cfg.mchNo || '') + '\')');
+    if (cfg.appId) { L.push('    ->setAppId(\'' + str(cfg.appId) + '\')'); }
+    L.push('    ->setPrivateKey($merchantPrivateKeyPem)        // 商户私钥 PKCS#8 PEM');
+    L.push('    ->setPublicKey($platformPublicKeyPem);        // 平台公钥 X.509 PEM');
+    L.push('$client = new \\NiuDun\\OpenSdk\\Client($config);');
+    L.push('');
+
+    // 嵌套结构先声明局部变量（关联数组），再挂到 param 上
+    var nested = [];
+    itf.fields.forEach(function (f) {
+      if (f.rows && values[f.key] && values[f.key].length) {
+        L.push('$' + f.key + ' = [');
+        values[f.key].forEach(function (item) {
+          L.push('    [' + rowLiteral(item, f.rows) + '],   // ' + (f.type || ''));
+        });
+        L.push('];');
+        L.push('');
+        nested.push(f.key);
+      }
+      if (f.obj && values[f.key]) {
+        var o = values[f.key];
+        var pairs = f.obj.filter(function (s) { return o[s.key] !== '' && o[s.key] !== undefined; })
+          .map(function (s) { return '\'' + s.key + '\' => ' + lit(o[s.key], s); });
+        if (pairs.length) {
+          L.push('$' + f.key + ' = [' + pairs.join(', ') + '];   // ' + (f.type || ''));
+          L.push('');
+          nested.push(f.key);
+        }
+      }
+    });
+
+    var pairs = [];
+    itf.fields.forEach(function (f) {
+      if (f.rows || f.obj) {
+        if (values[f.key]) { pairs.push('\'' + f.key + '\' => $' + f.key); }
+        return;
+      }
+      var v = values[f.key];
+      if (v === undefined || v === '' || (Array.isArray(v) && !v.length)) { return; }
+      pairs.push('\'' + f.key + '\' => ' + lit(v, f));
+    });
+    L.push('$param = [' + pairs.join(', ') + '];');
+    L.push('');
+
+    if (itf.resultClass === 'null') {
+      L.push('$client->' + itf.method + '($param);   // data 为 null，凭 code == 0 判断成功（失败时抛 RuntimeException）');
+    } else {
+      L.push('$result = $client->' + itf.method + '($param);   // 返回 NiuDunResult 关联数组');
+      L.push('echo json_encode($result[\'data\'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);');
+    }
+
+    $('codePre').innerHTML = highlightPhp(L.join('\n'));
+  }
+
+  /// PHP 单引号字符串字面量转义（仅需转义反斜杠与单引号）
+  function str(v) {
+    return String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  }
+
+  /// 按字段类型生成 PHP 字面量（金额一律整数分）
+  function lit(v, f) {
+    if (Array.isArray(v)) {
+      return '[' + v.map(function (x) { return '\'' + str(x) + '\''; }).join(', ') + ']';
+    }
+    if (f.type === 'Boolean') { return v === true || v === 'true' ? 'true' : 'false'; }
+    if (f.type === 'int') { return String(parseInt(v, 10)); }
+    if (f.num || f.type === 'Integer' || f.type === 'Double') { return String(v); }
+    return '\'' + str(v) + '\'';
+  }
+
+  /// 嵌套列表的一行：'k' => v 逗号分隔（空字段省略）
+  function rowLiteral(item, subs) {
+    return subs.filter(function (s) { return item[s.key] !== '' && item[s.key] !== undefined; })
+      .map(function (s) { return '\'' + s.key + '\' => ' + lit(item[s.key], s); }).join(', ');
+  }
+
+  /// 轻量 PHP 高亮（注释/字符串/关键字/数字/变量），不引高亮库保持单文件零依赖
+  function highlightPhp(src) {
+    var re = /(\/\/[^\n]*)|('(?:[^'\\]|\\.)*')|(\b(?:function|new|return|use|namespace|array)\b)|(\$[A-Za-z_]\w*)|\b(\d+)/g;
+    var out = '', last = 0, m;
+    while ((m = re.exec(src)) !== null) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) { out += '<span class="c">' + esc(m[1]) + '</span>'; }
+      else if (m[2]) { out += '<span class="s">' + esc(m[2]) + '</span>'; }
+      else if (m[3]) { out += '<span class="kw">' + esc(m[3]) + '</span>'; }
+      else if (m[4]) { out += '<span class="n">' + esc(m[4]) + '</span>'; }
+      else { out += '<span class="n">' + esc(m[5]) + '</span>'; }
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+
+  $('codeCopy').onclick = function () {
+    var text = $('codePre').textContent;
+    var done = function () {
+      $('codeCopy').textContent = '已复制';
+      setTimeout(function () { $('codeCopy').textContent = '复制'; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done);
+    } else {
+      // 非安全上下文（http 非 localhost）无 clipboard API，回退到临时 textarea
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* 忽略 */ }
+      ta.remove();
+    }
+  };
+
+  // ==================================================================
+  // 代码预览宽度拖拽调整（宽度存 localStorage，双击复位）
+  // ==================================================================
+
+  // 宽度本地存储键；默认/最小/最大（最大还会按窗口宽二次夹取，保证表单栏不被挤没）
+  var CODE_W_KEY = 'niudun_demo_code_width';
+  var CODE_W_DEFAULT = 400, CODE_W_MIN = 300, CODE_W_MAX = 900;
+  // 三栏布局的固定占用：导航栏 172 + 两个 gap 28 + 表单栏保底 340
+  var LAYOUT_FIXED = 172 + 28 + 340;
+
+  function applyCodeWidth(w) {
+    document.documentElement.style.setProperty('--code-w', w + 'px');
+  }
+
+  function clampCodeWidth(w) {
+    var layout = document.querySelector('.layout');
+    var layoutW = layout ? layout.clientWidth : 1280;
+    var max = Math.max(CODE_W_MIN, Math.min(CODE_W_MAX, layoutW - LAYOUT_FIXED));
+    return Math.round(Math.min(Math.max(w, CODE_W_MIN), max));
+  }
+
+  (function initCodeResize() {
+    var saved = parseInt(localStorage.getItem(CODE_W_KEY), 10);
+    if (saved > 0) { applyCodeWidth(clampCodeWidth(saved)); }
+
+    var gutter = $('gutter');
+    var dragging = false, startX = 0, startW = 0;
+
+    gutter.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      dragging = true;
+      startX = e.clientX;
+      startW = $('codeCard').getBoundingClientRect().width;
+      gutter.classList.add('dragging');
+      document.body.classList.add('resizing');
+      // 指针捕获：拖出分隔条范围（甚至移出窗口）仍持续收到 move 事件
+      gutter.setPointerCapture(e.pointerId);
+    });
+
+    gutter.addEventListener('pointermove', function (e) {
+      if (!dragging) { return; }
+      // 向左拖动 = 代码栏变宽
+      applyCodeWidth(clampCodeWidth(startW + (startX - e.clientX)));
+    });
+
+    function endDrag(e) {
+      if (!dragging) { return; }
+      dragging = false;
+      gutter.classList.remove('dragging');
+      document.body.classList.remove('resizing');
+      if (e.pointerId !== undefined && gutter.hasPointerCapture(e.pointerId)) {
+        gutter.releasePointerCapture(e.pointerId);
+      }
+      var w = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--code-w'));
+      if (w > 0) { localStorage.setItem(CODE_W_KEY, String(Math.round(w))); }
+    }
+    gutter.addEventListener('pointerup', endDrag);
+    gutter.addEventListener('pointercancel', endDrag);
+
+    // 双击复位到默认宽度
+    gutter.addEventListener('dblclick', function () {
+      applyCodeWidth(CODE_W_DEFAULT);
+      localStorage.setItem(CODE_W_KEY, String(CODE_W_DEFAULT));
+    });
+
+    // 窗口尺寸变化时按新宽度重新夹取，避免窗口变小后表单栏被代码栏挤没
+    // （放大窗口时同样按存储值还原）
+    window.addEventListener('resize', function () {
+      var w = parseInt(localStorage.getItem(CODE_W_KEY), 10);
+      if (w > 0) { applyCodeWidth(clampCodeWidth(w)); }
+    });
+  })();
+
+  // ==================================================================
+  // 结果展示
+  // ==================================================================
+
+  function showResult(res) {
+    $('resultCard').style.display = 'block';
+    var bar = $('statusBar');
+    bar.innerHTML = '';
+    var result = res.result || {};
+    var ok = res.success && result.code === 0;
+    bar.appendChild(tag(ok ? 'ok' : 'fail', ok ? '✓ 调用成功' : '✗ 调用失败'));
+    if (result.code !== undefined && result.code !== null) {
+      bar.appendChild(tag('neutral', 'code: ' + result.code));
+    }
+    if (result.msg) { bar.appendChild(tag('neutral', esc(result.msg))); }
+    if (res.signVerified === true) { bar.appendChild(tag('ok', '响应验签 ✓')); }
+    else if (res.signVerified === false) { bar.appendChild(tag('fail', '响应验签 ✗')); }
+    else if (res.responseBody) { bar.appendChild(tag('neutral', '响应未签名（旧版平台/报文解析失败）')); }
+    if (res.durationMs !== undefined) { bar.appendChild(tag('neutral', res.durationMs + ' ms')); }
+    if (res.error) { bar.appendChild(tag('fail', '错误: ' + esc(res.error))); }
+
+    // 跳转地址 / 支付参数体单独透出（联调最关注字段）
+    var data = result.data || {};
+    var jump = data.payBody || data.h5Url || data.miniUrl || data.confirmUrl;
+    var pb = $('payBody');
+    if (jump) {
+      var kind = data.payBodyType || (data.h5Url ? 'h5Url' : '') || (data.miniUrl ? 'miniUrl' : '') || 'confirmUrl';
+      pb.style.display = 'block';
+      pb.textContent = kind + '（生成二维码/跳转链接）: ' + jump;
+    } else {
+      pb.style.display = 'none';
+    }
+
+    $('reqPre').innerHTML = pretty(res.requestBody);
+    $('respPre').innerHTML = pretty(res.responseBody);
+    $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function tag(cls, text) {
+    var s = document.createElement('span');
+    s.className = 'tag ' + cls;
+    s.textContent = text;
+    return s;
+  }
+
+  // JSON 美化 + 轻量高亮（字符串/数字/布尔/键名着色）
+  function pretty(text) {
+    if (!text) { return esc('(无内容)'); }
+    try {
+      var obj = JSON.parse(text);
+      var json = JSON.stringify(obj, null, 2);
+      return esc(json).replace(/&quot;([^&]*?)&quot;(\s*:)/g, '<span class="k">"$1"</span>$2')
+        .replace(/: &quot;(.*?)&quot;/g, ': <span class="s">"$1"</span>')
+        .replace(/: (true|false)/g, ': <span class="b">$1</span>')
+        .replace(/: (-?\d+\.?\d*)/g, ': <span class="n">$1</span>');
+    } catch (e) {
+      return esc(text);
+    }
+  }
+
+  // ==================================================================
+  // 回调记录轮询
+  // ==================================================================
+
+  var cbLastCount = -1;
+  function pollCallbacks() {
+    fetch('/demo/callbacks').then(function (r) { return r.json(); }).then(function (data) {
+      if (data.count === cbLastCount) { return; }
+      cbLastCount = data.count;
+      var box = $('cbList');
+      box.innerHTML = '';
+      if (!data.records.length) {
+        box.innerHTML = '<div class="empty">暂无回调，发起支付/退款/转账/分账时将 notifyUrl 指向上方的回调地址，平台通知会实时出现在这里</div>';
+        return;
+      }
+      data.records.forEach(function (r) {
+        var item = document.createElement('details');
+        item.className = 'cb-item';
+        var vTag = r.signVerified
+          ? '<span class="tag ok">验签 ✓</span>'
+          : '<span class="tag fail">验签 ✗</span>';
+        item.innerHTML = '<summary><span class="tag neutral">' + esc(r.type) + '</span>' + vTag +
+          (r.code !== null && r.code !== undefined ? '<span class="tag neutral">code: ' + r.code + '</span>' : '') +
+          (r.msg ? '<span>' + esc(r.msg) + '</span>' : '') +
+          '<span class="t">' + esc(r.time) + '</span></summary>' +
+          '<pre>' + pretty(r.body) + '</pre>';
+        box.appendChild(item);
+      });
+    }).catch(function () { /* 服务重启等场景静默重试 */ });
+  }
+  setInterval(pollCallbacks, 2000);
+  pollCallbacks();
+
+  $('cbClear').onclick = function () {
+    fetch('/demo/callbacks/clear', { method: 'POST' }).then(function () {
+      cbLastCount = -1;
+      pollCallbacks();
+    });
+  };
+})();
+</script>
+</body>
+</html>
