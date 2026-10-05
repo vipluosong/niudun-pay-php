@@ -7,7 +7,7 @@ use NiuDun\OpenSdk\Util\SignUtil;
 use NiuDun\OpenSdk\Util\RsaUtil;
 
 /**
- * 牛盾支付 SDK 客户端 — 对照 sdk-contract.md 第十节
+ * 牛盾聚合支付 SDK 客户端 — 对照 sdk-contract.md 第十节
  * 走 JSON 签名路径（reqTime 已序列化为 GMT+8 字面量），与后端验签一致
  *
  * 请求参数统一为**关联数组**（无参数对象），字段名与平台契约一致；

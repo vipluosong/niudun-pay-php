@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * 牛盾支付 PHP SDK 联调 Demo — 单文件路由
+ * 牛盾聚合支付 PHP SDK 联调 Demo — 单文件路由
  *
  * 启动（仓根执行）：php -S 127.0.0.1:9793 demo/router.php
  *

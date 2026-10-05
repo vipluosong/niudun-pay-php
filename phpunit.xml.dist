@@ -5,7 +5,7 @@
          colors="true"
          cacheResultFile=".phpunit.cache/test-results">
     <testsuites>
-        <testsuite name="牛盾支付 Open SDK Test Suite">
+        <testsuite name="牛盾聚合支付 Open SDK Test Suite">
             <directory>tests</directory>
         </testsuite>
     </testsuites>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>牛盾支付 PHP SDK 联调 Demo</title>
+<title>牛盾聚合支付 PHP SDK 联调 Demo</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -140,7 +140,7 @@
 </head>
 <body>
 <header>
-  <h1>牛盾支付 PHP SDK 联调 Demo</h1>
+  <h1>牛盾聚合支付 PHP SDK 联调 Demo</h1>
   <span class="conn" id="conn">加载配置中…</span>
   <button class="btn-plain spacer" id="cfgOpen">连接配置</button>
 </header>
@@ -301,7 +301,7 @@
       paramClass: 'array<string,mixed>', method: 'pay', resultClass: 'array<string,mixed>',
       fields: [
         { key: 'bizOrderNo', label: '商户订单号', req: true, gen: 'PAY_' },
-        { key: 'title', label: '支付标题', req: true, def: '牛盾支付 SDK 联调测试' },
+        { key: 'title', label: '支付标题', req: true, def: '牛盾聚合支付 SDK 联调测试' },
         { key: 'amount', label: '支付金额（分）', req: true, def: '100', type: 'int', num: true, hint: '100 = 1.00 元' },
         { key: 'method', label: '支付方式', opts: METHODS, hint: '如 wechat_qr / alipay_qr / wechat_barcode' },
         { key: 'notifyUrl', label: '异步通知地址', def: '@callbackBase/callback/pay' },
@@ -453,7 +453,7 @@
       paramClass: 'array<string,mixed>', method: 'gatewayPrePay', resultClass: 'array<string,mixed>',
       fields: [
         { key: 'bizOrderNo', label: '商户订单号', req: true, gen: 'GW_' },
-        { key: 'title', label: '支付标题', req: true, def: '牛盾支付 网关支付联调' },
+        { key: 'title', label: '支付标题', req: true, def: '牛盾聚合支付 网关支付联调' },
         { key: 'amount', label: '支付金额（分）', req: true, def: '100', type: 'int', num: true },
         { key: 'gatewayPayType', label: '网关支付类型', req: true, opts: GATEWAY_TYPES, hint: 'cashier=统一收银台；aggregate=聚合扫码一码多付' },
         { key: 'notifyUrl', label: '异步通知地址', def: '@callbackBase/callback/pay' },

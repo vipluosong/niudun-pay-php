@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// 牛盾支付 支付下单示例 — PHP
+// 牛盾聚合支付下单示例 — PHP
 // 运行前：composer install，启动后端（niudun-start，端口 9999），替换为真实商户密钥
 require_once __DIR__ . '/../vendor/autoload.php';
 

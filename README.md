@@ -1,8 +1,8 @@
-# 牛盾支付 Open SDK for PHP
+# 牛盾聚合支付 Open SDK for PHP
 
-牛盾支付 开放支付平台 PHP SDK，封装支付、退款、转账、分账、网关共 15 个开放接口与回调验签。
+牛盾聚合支付 开放支付平台 PHP SDK，封装支付、退款、转账、分账、网关共 15 个开放接口与回调验签。
 
-> **适配 牛盾支付 Open ≥ 1.0** · **PHP 7.4+** · Apache-2.0 · 零第三方依赖（ext-openssl / ext-json）
+> **适配 牛盾聚合支付 Open ≥ 1.0** · **PHP 7.4+** · Apache-2.0 · 零第三方依赖（ext-openssl / ext-json）
 
 ## 功能
 
@@ -151,12 +151,12 @@ $client->alloc(['bizAllocNo' => 'AL_001', 'tradeNo' => $result['data']['tradeNo'
 
 ## License
 
-Apache-2.0，可自由用于商业项目与闭源集成，协议全文见 [LICENSE](LICENSE)。主仓库 [牛盾支付 Open](https://gitee.com/qyyapp) 核心为 LGPL-3.0-or-later，本 SDK 作为独立仓按 Apache-2.0 单独发布。
+Apache-2.0，可自由用于商业项目与闭源集成，协议全文见 [LICENSE](LICENSE)。主仓库 [牛盾聚合支付 Open](https://gitee.com/qyyapp) 核心为 LGPL-3.0-or-later，本 SDK 作为独立仓按 Apache-2.0 单独发布。
 
 ## 开源许可与来源
 
 本项目基于 [DaxPay](https://github.com/opendaxpay) 开放的支付 SDK 改造，
-按牛盾支付的命名规则重命名并适配，核心签名验签协议保持一致。
+按牛盾聚合支付的命名规则重命名并适配，核心签名验签协议保持一致。
 
 原项目采用 **Apache License 2.0**，本项目遵循同一许可：
 `LICENSE` 文件中保留了原始版权与许可声明，任何修改均在源码中可见。
