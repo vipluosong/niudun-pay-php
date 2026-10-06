@@ -4,6 +4,11 @@
     "type": "library",
     "keywords": ["niudun", "payment", "sdk", "alipay", "wechat"],
     "license": "Apache-2.0",
+    "homepage": "https://gitee.com/qyyapp/niudun-pay-php",
+    "support": {
+        "issues": "https://gitee.com/qyyapp/niudun-pay-php/issues",
+        "source": "https://gitee.com/qyyapp/niudun-pay-php"
+    },
     "require": {
         "php": ">=7.4",
         "ext-json": "*",

@@ -23,7 +23,8 @@
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "https://gitee.com/qyyapp/niudun-pay-php.git" }
+        { "type": "vcs", "url": "https://gitee.com/qyyapp/niudun-pay-php.git" },
+        { "type": "vcs", "url": "https://github.com/vipluosong/niudun-pay-php.git" }
     ],
     "require": {
         "niudun/open-sdk": "dev-main"
