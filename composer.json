@@ -1,5 +1,5 @@
 {
-    "name": "niudun/open-sdk",
+    "name": "niudun/pay",
     "description": "牛盾聚合支付 开放支付平台 PHP SDK（核心支付子集：pay / close / refund / query / 回调验签）",
     "type": "library",
     "keywords": ["niudun", "payment", "sdk", "alipay", "wechat"],

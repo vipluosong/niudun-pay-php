@@ -27,7 +27,7 @@
         { "type": "vcs", "url": "https://github.com/vipluosong/niudun-pay-php.git" }
     ],
     "require": {
-        "niudun/open-sdk": "dev-main"
+        "niudun/pay": "dev-main"
     }
 }
 ```
