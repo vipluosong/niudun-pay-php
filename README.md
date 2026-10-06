@@ -45,7 +45,7 @@ use NiuDun\OpenSdk\Config;
 
 ```php
 $config = (new Config())
-    ->setServiceUrl('https://ndpay-api.qyyapp.com')
+    ->setServiceUrl('https://api.niudunpay.com')
     ->setMchNo('M200000001')
     ->setAppId('APP001')
     ->setPrivateKey($merchantPrivateKeyPem)     // PEM 文本
